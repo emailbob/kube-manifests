@@ -1,0 +1,82 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: jenkins-leader
+  namespace: ci
+spec:
+  replicas: 1
+  strategy:
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app: jenkins-leader
+    spec:
+      securityContext:
+        runAsUser: 0
+      initContainers:
+        - name: "install-plugins"
+          image: "jenkins/jenkins:lts"
+          imagePullPolicy: "Always"
+          command: ["/bin/sh"]
+          args: ["-c", "rm -rf /var/jenkins_home/plugins/*.lock && /usr/local/bin/install-plugins.sh < /var/jenkins_config/plugins.txt"]
+          env:
+            - name: REF
+              value: /var/jenkins_home/plugins                                
+          volumeMounts:
+            - name: jenkins-home
+              mountPath: /var/jenkins_home
+              readOnly: false
+            - name: jenkins-config
+              mountPath: /var/jenkins_config
+              readOnly: true
+      containers:
+        - name: jenkins-leader
+          image: jenkins/jenkins:lts
+          imagePullPolicy: Always
+          # lifecycle:
+          #   postStart:
+          #     exec:
+          #       command: ["/bin/sh", "-c", "/usr/local/bin/install-plugins.sh < /var/jenkins_config/plugins.txt"]
+          env:
+            - name: REF
+              value: /var/jenkins_home/plugins        
+            - name: JAVA_OPTS
+              value: ""
+            - name: JENKINS_OPTS
+              value: ""
+          ports:
+            - containerPort: 8080
+              name: http
+            - containerPort: 50000
+              name: nodelistener
+          # resources:
+          #   requests:
+          #     cpu: "500m"
+          #     memory: "1Gi"
+          volumeMounts:
+            - name: jenkins-home
+              mountPath: /var/jenkins_home
+              readOnly: false
+            - name: jenkins-config
+              mountPath: /var/jenkins_config
+              readOnly: true
+            - name: plugin-dir
+              mountPath: /usr/share/jenkins/ref/plugins/
+              readOnly: false
+            - name: secrets-dir
+              mountPath: /usr/share/jenkins/ref/secrets/
+              readOnly: false
+      volumes:
+      - name: jenkins-config
+        configMap:
+          name: jenkins-configmap
+      - name: plugin-dir
+        emptyDir: {}
+      - name: secrets-dir
+        emptyDir: {}
+      - name: jenkins-home
+        persistentVolumeClaim:
+          claimName: jenkins-leader-claim
+      nodeSelector:
+        environment: mgmt

@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: jenkins-configmap
+  namespace: ci
+data:
+  plugins.txt: |-
+    kubernetes
+    slack
+    thinBackup
+    nodejs
+    timestamper

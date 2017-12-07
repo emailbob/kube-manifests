@@ -24,8 +24,8 @@ First get the name of the pod
 
 `kubectl get pods -n ci`
 
-`NAME                             READY     STATUS    RESTARTS   AGE
-jenkins-leader-79f964547-s8lmc   1/1       Running   0          23h`
+```NAME                             READY     STATUS    RESTARTS   AGE
+jenkins-leader-79f964547-s8lmc   1/1       Running   0          23h````
 
 Once you have the name of the pod you can cat the contents of the file
 
